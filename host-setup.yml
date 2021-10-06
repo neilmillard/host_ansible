@@ -30,6 +30,7 @@
         append=yes
         state=present
         createhome=yes
+        shell=/bin/bash
 
     - name: Set up authorized keys for the deployer user
       authorized_key: user=neil key="{{item}}"
