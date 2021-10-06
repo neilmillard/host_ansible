@@ -1,22 +1,69 @@
 - hosts: all
-  become: 'yes'
+  user: root
+  gather_facts: false
+
   vars:
-    user:
-      - name: "neilm"
-        ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDWu4ICrCLLZEpkNMEIlM3n/LWWPFeewAijnYdvp+jjdGkUVJiqvtgmH830bk4PbRBqivzaoX1rJjVEDedPvVtNe6pukx56idrmbVQ+5nRIGAf045dkDsHUZYmGdLlEWn9YmljzKVlcC5qF5xIY5pidhA7h635zF1+Jwj8386qXPKPtRWfU16X7/HCasXx/y5NioRiebGoTvm4BAk48m4yN88c6/1ND9WvPx/TSLLGltoixJFhXCSY9H59rsdbEuAfpGDw/e6hZafcYtIUNOUJwu5o9+9z4kaWFSgh+VC/bUhN7ZFvkKw7TbWsAyx5e2933Sdn7c2hRruLk+j8AJhC1IwGtJHqBFqBYi5I5IfZ93uYIun1OH1kaNNEiTWe2bSaBa4oxdguYhJshhOM0udBmCef33KKeTXcM++bw92m8Q9PjzFqV3oQizh/6uSw9W4c994EQV3IaLmj5sqjBXTRExqxmSznsNYLxiOT2gDQkwqLvgDkL059LTyPYvFKNQVc= neil@neilmillard.com"
+    user: neil
     packages:
-      - vim
+      - git
       - wget
       - curl
       - htop
   tasks:
-    - name: Add SSH public key
-      authorized_key:
-        user: '"{{ item.name }}"'
-        key: '"{{ item.ssh_key }}"'
-      loop:
-        - '"{{ user }}"'
+    - name: Make sure we have a 'wheel' group
+      group:
+        name: wheel
+        state: present
+
+    - name: Allow 'wheel' group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: Add sudoers users to wheel group
+      user:
+        name=neil
+        groups=wheel
+        append=yes
+        state=present
+        createhome=yes
+
+    - name: Set up authorized keys for the deployer user
+      authorized_key: user=neil key="{{item}}"
+      with_file:
+        - /home/neil/.ssh/id_rsa.pub
+
     - name: Ensure packages are installed
       apt:
-        name: '"{{ packages }}"'
+        name: "{{ packages }}"
         state: present
+
+- name: Log in as the new user to disable root
+  hosts: all
+  user: neil
+  gather_facts: false
+  become: yes
+
+  tasks:
+    - name: Disable root login over SSH
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "^PermitRootLogin"
+        line: "PermitRootLogin no"
+        state: present
+      notify:
+        - restart sshd
+
+    - name: Disable password login
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+      notify:
+        - restart sshd
+
+  handlers:
+  - name: restart sshd
+    service:
+      name: sshd
+      state: restarted
