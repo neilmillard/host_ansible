@@ -1,0 +1,22 @@
+- hosts: all
+  become: 'yes'
+  vars:
+    user:
+      - name: "neilm"
+        ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDWu4ICrCLLZEpkNMEIlM3n/LWWPFeewAijnYdvp+jjdGkUVJiqvtgmH830bk4PbRBqivzaoX1rJjVEDedPvVtNe6pukx56idrmbVQ+5nRIGAf045dkDsHUZYmGdLlEWn9YmljzKVlcC5qF5xIY5pidhA7h635zF1+Jwj8386qXPKPtRWfU16X7/HCasXx/y5NioRiebGoTvm4BAk48m4yN88c6/1ND9WvPx/TSLLGltoixJFhXCSY9H59rsdbEuAfpGDw/e6hZafcYtIUNOUJwu5o9+9z4kaWFSgh+VC/bUhN7ZFvkKw7TbWsAyx5e2933Sdn7c2hRruLk+j8AJhC1IwGtJHqBFqBYi5I5IfZ93uYIun1OH1kaNNEiTWe2bSaBa4oxdguYhJshhOM0udBmCef33KKeTXcM++bw92m8Q9PjzFqV3oQizh/6uSw9W4c994EQV3IaLmj5sqjBXTRExqxmSznsNYLxiOT2gDQkwqLvgDkL059LTyPYvFKNQVc= neil@neilmillard.com"
+    packages:
+      - vim
+      - wget
+      - curl
+      - htop
+  tasks:
+    - name: Add SSH public key
+      authorized_key:
+        user: '"{{ item.name }}"'
+        key: '"{{ item.ssh_key }}"'
+      loop:
+        - '"{{ user }}"'
+    - name: Ensure packages are installed
+      apt:
+        name: '"{{ packages }}"'
+        state: present
