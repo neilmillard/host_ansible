@@ -9,7 +9,16 @@
       - wget
       - curl
       - htop
+      - haveged
   tasks:
+    - name: update all RedHat things
+      yum: name=* state=latest
+      when: ansible_os_family == "RedHat"
+
+    - name: update all Ubuntu things
+      apt: name=* state=latest
+      when: ansible_os_family == "Debian"
+
     - name: Make sure we have a 'wheel' group
       group:
         name: wheel
@@ -25,7 +34,7 @@
 
     - name: Add sudoers users to wheel group
       user:
-        name=neil
+        user="{{ user }}"
         groups=wheel
         append=yes
         state=present
@@ -33,7 +42,7 @@
         shell=/bin/bash
 
     - name: Set up authorized keys for the deployer user
-      authorized_key: user=neil key="{{item}}"
+      authorized_key: user="{{ user }}" key="{{item}}"
       with_file:
         - /home/neil/.ssh/id_rsa.pub
 
