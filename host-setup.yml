@@ -1,6 +1,6 @@
 - hosts: all
   user: root
-  gather_facts: false
+  gather_facts: true
 
   vars:
     user: neil
@@ -44,16 +44,17 @@
     - name: Set up authorized keys for the deployer user
       authorized_key: user="{{ user }}" key="{{item}}"
       with_file:
-        - /home/neil/.ssh/id_rsa.pub
+        - /home/{{ user }}/.ssh/id_rsa.pub
 
     - name: Ensure packages are installed
       apt:
         name: "{{ packages }}"
         state: present
+      when: ansible_os_family == "Debian"
 
 - name: Log in as the new user to disable root
   hosts: all
-  user: neil
+  user: {{ user }}
   gather_facts: false
   become: yes
 
