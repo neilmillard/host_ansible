@@ -54,7 +54,7 @@
 
 - name: Log in as the new user to disable root
   hosts: all
-  user: {{ user }}
+  user: "{{ user }}"
   gather_facts: false
   become: yes
 
